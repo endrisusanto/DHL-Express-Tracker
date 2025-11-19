@@ -1,0 +1,5 @@
+{
+  "name": "DHL Express Tracker",
+  "description": "A modern, responsive DHL shipment tracking application featuring real-time updates and AI-powered status analysis.",
+  "requestFramePermissions": []
+}
