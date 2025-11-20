@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  # Frontend + Backend Container
+  app:
+    build: .
+    container_name: dhl-tracker-app
+    ports:
+      - "8080:80"
+    depends_on:
+      - db
+    environment:
+      - DB_HOST=db
+      - DB_NAME=dhl_tracker
+      - DB_USER=dhl_user
+      - DB_PASSWORD=dhl_pass
+    restart: always
+
+  # Database Container
+  db:
+    image: mariadb:10.6
+    container_name: dhl-tracker-db
+    environment:
+      - MYSQL_ROOT_PASSWORD=root_secret
+      - MYSQL_DATABASE=dhl_tracker
+      - MYSQL_USER=dhl_user
+      - MYSQL_PASSWORD=dhl_pass
+    volumes:
+      - db_data:/var/lib/mysql
+      # Automatically import SQL schema on first start
+      - ./public/database.sql:/docker-entrypoint-initdb.d/init.sql
+    restart: always
+
+volumes:
+  db_data:

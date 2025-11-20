@@ -1,76 +1,56 @@
 # DHL Express Internal Tracker
 
-A Production-Ready DHL Shipment Tracking Dashboard tailored for Internal Teams.
-Built with **React (Vite)**, **PHP**, and **MySQL**.
+A Production-Ready DHL Shipment Tracking Dashboard.
+Built with **React**, **PHP**, and **MySQL**, fully containerized with **Docker**.
 
-## Features
+## 🚀 How to Deploy (Docker)
 
-*   **Real-time Tracking**: Direct integration with DHL Unified API.
-*   **Multi-AWB Dashboard**: Track unlimited shipments simultaneously.
-*   **Internal Management**: Assign PICs (Person In Charge) and mark items as collected locally.
-*   **Activity Logging**: Full audit trail of all actions (Add, Delete, Update, Assign).
-*   **Database Storage**: Persistent MySQL storage for Shipments and Logs.
-*   **Responsive**: Optimized for Desktop, Tablet, and Mobile.
-
----
-
-## 🚀 Deployment Guide (Podman / Docker)
-
-This application is containerized. It serves the React Frontend and PHP Backend from a single Apache container, linked to a MariaDB database container.
+This is the easiest way to run the application. It sets up the Frontend, Backend, and Database automatically.
 
 ### Prerequisites
-1.  **Podman** (with podman-compose) OR **Docker Desktop**.
-2.  **Node.js** (to build the frontend assets).
+*   **Docker** and **Docker Compose** installed on your machine.
 
-### Step 1: Build the Frontend
-The PHP container expects the compiled React assets to be present in the `dist/` folder.
+### Steps
 
-```bash
-# Install dependencies
-npm install
+1.  **Clone/Open Project**:
+    Open your terminal in the project folder.
 
-# Build the project (Creates the 'dist' folder)
-npm run build
-```
+2.  **Run Docker Compose**:
+    This command will build the React app, create the PHP server, and start the Database.
+    ```bash
+    docker-compose up --build -d
+    ```
 
-### Step 2: Start Containers
-Use Compose to orchestrate the Web Server and Database.
-
-```bash
-# Using Podman
-podman-compose up --build -d
-
-# Using Docker
-docker-compose up --build -d
-```
-
-### Step 3: Access the App
-Open your browser:
-**http://localhost:8080**
+3.  **Access the App**:
+    Wait about 30 seconds for the database to initialize.
+    Open your browser and go to:
+    👉 **http://localhost:8080**
 
 ---
 
-## 🛠️ Manual Development (XAMPP / Local PHP)
+### 📂 Project Architecture
 
-If you want to develop locally without containers:
+*   **Container 1 (app)**: 
+    *   **OS**: Linux (Debian/Alpine)
+    *   **Web Server**: Apache
+    *   **Runtime**: PHP 8.2
+    *   **Content**: Serves the compiled React App (`index.html`) and the API (`api/shipments.php`).
+*   **Container 2 (db)**:
+    *   **Database**: MariaDB 10.6
+    *   **Storage**: Persistent Docker Volume (`db_data`).
 
-1.  **Database**: 
-    *   Import `public/database.sql` into your MySQL/MariaDB.
-    *   Create a database named `dhl_tracker`.
-2.  **Backend**:
-    *   Copy the `public/api` folder to your htdocs (e.g., `C:/xampp/htdocs/dhl_tracker/api`).
-    *   Ensure `shipments.php` is accessible at `http://localhost/dhl_tracker/api/shipments.php`.
-    *   *Note*: You may need to edit `shipments.php` to remove `getenv()` and hardcode DB credentials if not using env vars.
-3.  **Frontend**:
-    *   Run `npm run dev`.
-    *   The app automatically detects `localhost` and tries to connect to XAMPP at `http://localhost/dhl_tracker/api/shipments.php`.
+### 🛠️ Troubleshooting
 
----
+*   **App is Loading Indefinitely?**
+    *   Check if the containers are running: `docker ps`
+    *   Check logs: `docker logs dhl-tracker-app`
+*   **Database Error?**
+    *   The database takes a moment to start up properly on the very first run. Wait a minute and refresh.
 
-## 📂 Project Structure
+### 💻 Development (Localhost without Docker)
 
-*   **src/**: React Source Code.
-*   **public/api/**: PHP Backend scripts.
-*   **public/database.sql**: Database Schema.
-*   **Dockerfile**: Container definition for PHP+Apache.
-*   **compose.yaml**: Container orchestration config.
+If you want to modify the code:
+
+1.  **Install Dependencies**: `npm install`
+2.  **Run Dev Server**: `npm run dev`
+3.  **Backend**: You will need a local XAMPP/MAMP server running MySQL and PHP to handle the API requests, as the React dev server acts only as a frontend proxy.

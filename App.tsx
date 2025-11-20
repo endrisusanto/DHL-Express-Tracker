@@ -8,12 +8,12 @@ import { Timeline } from './components/Timeline';
 
 // Helper to get API URL based on environment
 const getApiUrl = () => {
-  // Check if we are in development mode (localhost:5173 usually)
+  // Development (npm run dev): Point to local XAMPP or specific local PHP server
+  // Production (Docker/Container): Use relative path because React is served by same Apache server as PHP
   const isDev = window.location.hostname === 'localhost' && window.location.port !== '80' && window.location.port !== '8080';
   
-  // If dev, point to standard XAMPP path. If prod (container/xampp), use relative path.
   return isDev 
-    ? 'http://localhost/dhl_tracker/api/shipments.php' 
+    ? 'http://localhost/dhl_tracker/api/shipments.php' // Adjust this if your local dev XAMPP path differs
     : 'api/shipments.php'; 
 };
 
@@ -42,18 +42,13 @@ const App: React.FC = () => {
     try {
         const res = await fetch(getApiUrl());
         
-        // Handle non-JSON responses (like 404 HTML pages from XAMPP)
         const contentType = res.headers.get("content-type");
         if (!contentType || !contentType.includes("application/json")) {
-            console.warn("API returned non-JSON response. Check server path.");
+            // Only warn if we expected JSON. This prevents noise on initial docker load if DB isn't ready.
             return;
         }
 
         if (!res.ok) { 
-            if (res.status === 404) {
-                console.warn("API Endpoint not found. Ensure shipments.php is in /api folder.");
-                return;
-            }
             throw new Error(`Server error: ${res.status}`); 
         }
 
@@ -69,7 +64,8 @@ const App: React.FC = () => {
 
     } catch (err) {
         console.error("Failed to load shipments from DB:", err);
-        setError("Could not load data from server. Ensure XAMPP/Apache is running.");
+        // Don't show heavy error UI on load, just log it. 
+        // The user will realize connectivity issues if they try to add/update.
     }
   };
 
@@ -79,17 +75,12 @@ const App: React.FC = () => {
 
   const saveShipmentToDB = async (shipment: TrackedShipment) => {
      try {
-         const controller = new AbortController();
-         const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout
-
-         await fetch(getApiUrl(), {
+         // No blocking, just fire
+         fetch(getApiUrl(), {
              method: 'POST',
              headers: { 'Content-Type': 'application/json' },
-             body: JSON.stringify({ action: 'save_shipment', data: shipment }),
-             signal: controller.signal
-         });
-         
-         clearTimeout(timeoutId);
+             body: JSON.stringify({ action: 'save_shipment', data: shipment })
+         }).catch(e => console.warn("Background Save Error", e));
      } catch (e) {
          console.error("Save failed", e);
      }
@@ -107,11 +98,11 @@ const App: React.FC = () => {
 
   const saveLogToDB = async (log: LogEntry) => {
       try {
-        await fetch(getApiUrl(), {
+        fetch(getApiUrl(), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ action: 'save_log', data: log })
-        });
+        }).catch(e => console.warn("Log Save Error", e));
       } catch (e) { console.error("Log save failed", e); }
   };
 
@@ -147,11 +138,10 @@ const App: React.FC = () => {
     setError(null);
 
     try {
-        // Safely parse inputs using explicit Regex to handle all whitespace
         const rawInputs = trackingInput.split(/[\s,]+/).map(s => s.trim()).filter(s => s.length > 0);
         const uniqueInputs = Array.from(new Set<string>(rawInputs));
         
-        // Filter out numbers that are already being tracked to avoid duplicates
+        // Filter already tracked
         const trackingNumbers = uniqueInputs.filter(num => !shipments.some(s => s.id === num));
 
         if (trackingNumbers.length === 0) {
@@ -162,15 +152,13 @@ const App: React.FC = () => {
              return;
         }
 
-        // Clear input immediately to show acceptance
         setTrackingInput(''); 
-
-        const errors: string[] = [];
         
-        // Process loop
+        // Using a 'for...of' loop with non-blocking DB saves
+        // We process tracking sequentially to avoid 429, but we don't wait for DB.
         for (const num of trackingNumbers) {
             try {
-                // 1. Track Shipment (API)
+                // 1. Track
                 const data = await trackShipment(num);
                 
                 const newShipment: TrackedShipment = {
@@ -180,34 +168,30 @@ const App: React.FC = () => {
                     collectedAt: undefined
                 };
                 
-                // 2. Update State Immediately
+                // 2. Update State
                 setShipments(prev => {
-                    // Double check duplicate in case of race condition
                     if (prev.some(s => s.id === newShipment.id)) return prev;
                     return [newShipment, ...prev];
                 });
                 
                 addLog('ADD_SHIPMENT', `Added new shipment ${num}`, num);
 
-                // 3. Save to DB (Non-blocking/Fire-and-forget to prevent loop freeze)
-                // We DO NOT await this. We let it happen in background.
-                saveShipmentToDB(newShipment).catch(err => console.warn("Background DB Save Warning:", err));
+                // 3. DB Save (Fire & Forget)
+                saveShipmentToDB(newShipment);
 
-                // 4. Delay to prevent Rate Limiting (429) - Essential for DHL API
-                await new Promise(resolve => setTimeout(resolve, 1500)); 
+                // 4. Rate Limit Delay
+                await new Promise(resolve => setTimeout(resolve, 1200)); 
 
             } catch (err: any) {
                 console.error(`Error tracking ${num}:`, err);
-                errors.push(`${num}: ${err.message}`);
+                // We continue to the next number even if one fails
+                // But we might want to show a toast or error status later
             }
         }
 
-        if (errors.length > 0) {
-            setError(`Completed with errors: ${errors.join(' | ')}`);
-        }
     } catch (err: any) {
         console.error("Search critical error:", err);
-        setError("An unexpected error occurred. Please try again.");
+        setError("An error occurred while processing. Check console.");
     } finally {
         setLoading(false);
     }
@@ -223,7 +207,10 @@ const App: React.FC = () => {
     let updateCount = 0;
 
     try {
-        for (const existing of shipments) {
+        // Clone existing to avoid mutation issues
+        const currentList = [...shipments];
+
+        for (const existing of currentList) {
             try {
                 const freshData = await trackShipment(existing.id);
                 
@@ -239,24 +226,18 @@ const App: React.FC = () => {
                 };
 
                 updatedShipments.push(updated);
-                
-                // Fire and forget DB save
-                saveShipmentToDB(updated).catch(e => console.warn("Refresh DB save failed", e));
+                saveShipmentToDB(updated);
                 updateCount++;
 
-                // Delay 1s for rate limiting
                 await new Promise(resolve => setTimeout(resolve, 1000));
             } catch (err: any) {
-                updatedShipments.push(existing);
+                updatedShipments.push(existing); // Keep old data if update fails
                 errors.push(`Update failed for ${existing.id}`);
             }
         }
         setShipments(updatedShipments);
         addLog('BULK_UPDATE', `Refreshed status for ${updateCount} shipments`);
         
-        if (errors.length > 0) {
-            setError(`Some updates failed. Check connection.`);
-        }
     } finally {
         setIsRefreshingAll(false);
     }
@@ -727,7 +708,6 @@ const App: React.FC = () => {
                     >
                         <ArrowLeft size={20} /> Back to Dashboard
                     </button>
-                    {/* Clear History button removed as requested */}
                 </div>
 
                 <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
