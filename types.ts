@@ -1,3 +1,4 @@
+
 export interface DHLEvent {
   date: string;
   time: string;
@@ -48,7 +49,7 @@ export interface DHLShipment {
 
 // Extended interface for local app state
 export interface TrackedShipment extends DHLShipment {
-  pic: string;           // Person In Charge
+  pic: string[];         // Person In Charge (Array of names)
   isCollected: boolean;  // Has the item been collected internally?
   collectedAt?: string;  // Timestamp of collection
 }
@@ -60,4 +61,15 @@ export interface DHLApiResponse {
 export interface AppError {
   message: string;
   details?: string;
+}
+
+// New Types for Activity Log
+export type LogAction = 'ADD_SHIPMENT' | 'DELETE_SHIPMENT' | 'UPDATE_STATUS' | 'ADD_PIC' | 'REMOVE_PIC' | 'MARK_COLLECTED' | 'MARK_UNCOLLECTED' | 'BULK_UPDATE';
+
+export interface LogEntry {
+  id: string;
+  timestamp: string;
+  action: LogAction;
+  description: string;
+  relatedShipmentId?: string;
 }

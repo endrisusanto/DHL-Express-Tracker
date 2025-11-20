@@ -10,8 +10,8 @@ export const ShipmentCard: React.FC<Props> = ({ shipment }) => {
   const isDelivered = shipment.status.statusCode === 'delivered' || shipment.status.description.toLowerCase().includes('delivered');
 
   return (
-    <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden mb-6">
-      <div className="bg-gradient-to-r from-dhl-yellow to-yellow-400 p-6">
+    <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden h-full flex flex-col">
+      <div className="bg-gradient-to-r from-dhl-yellow to-yellow-400 p-6 flex-shrink-0">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <p className="text-dhl-red font-bold text-xs uppercase tracking-wider mb-1">Tracking Number</p>
@@ -23,7 +23,7 @@ export const ShipmentCard: React.FC<Props> = ({ shipment }) => {
         </div>
       </div>
 
-      <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6 flex-grow">
         {/* Origin */}
         <div className="flex flex-col">
           <span className="text-gray-400 text-xs font-medium uppercase mb-2 flex items-center gap-1">
@@ -52,7 +52,7 @@ export const ShipmentCard: React.FC<Props> = ({ shipment }) => {
         </div>
       </div>
 
-      <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex flex-wrap gap-4 text-sm text-gray-600">
+      <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex flex-wrap gap-4 text-sm text-gray-600 mt-auto">
         <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-md border border-gray-200">
             <Package size={16} className="text-dhl-red" />
             <span>{shipment.details?.product?.productName || shipment.service}</span>
