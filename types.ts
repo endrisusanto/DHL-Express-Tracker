@@ -9,6 +9,7 @@ export interface DHLEvent {
     description: string;
   }[];
   signedBy?: string;
+  timestamp?: string;
 }
 
 export interface DHLOriginDestination {

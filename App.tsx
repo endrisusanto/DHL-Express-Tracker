@@ -5,6 +5,7 @@ import { trackShipment } from './services/dhl';
 import { TrackedShipment, LogEntry, LogAction } from './types';
 import { ShipmentCard } from './components/ShipmentCard';
 import { Timeline } from './components/Timeline';
+import { AiSummary } from './components/AiSummary';
 
 // Helper to get API URL based on environment
 const getApiUrl = () => {
@@ -646,15 +647,15 @@ const App: React.FC = () => {
 
                                 {/* Desktop Table View (>= md) */}
                                 <div className="hidden md:block bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100 overflow-x-auto">
-                                    <table className="w-full min-w-[1000px]">
+                                    <table className="w-full min-w-[1000px] border-collapse">
                                         <thead>
                                             <tr className="bg-gray-50 border-b border-gray-200">
                                                 <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-64">AWB Info</th>
                                                 <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap">DHL Status</th>
                                                 <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Route</th>
-                                                <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-80 sticky right-64 z-20 bg-gray-50 border-l border-gray-200 shadow-sm">PIC Team</th>
-                                                <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-40 sticky right-24 z-20 bg-gray-50">Collection</th>
-                                                <th className="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider w-24 sticky right-0 z-20 bg-gray-50">Actions</th>
+                                                <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-40">Collection</th>
+                                                <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-80">PIC Team</th>
+                                                <th className="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider w-24 sticky right-0 z-20 bg-gray-50 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.1)]">Actions</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-gray-100">
@@ -693,26 +694,8 @@ const App: React.FC = () => {
                                                         </div>
                                                     </td>
 
-                                                    {/* PIC ASSIGNMENT (MULTIPLE) */}
-                                                    <td className={`px-6 py-4 sticky right-64 z-10 border-l border-gray-200 shadow-sm ${item.isCollected ? 'bg-green-50' : 'bg-white group-hover:bg-yellow-50'}`}>
-                                                        <div className="flex flex-wrap gap-1">
-                                                            {item.pic.length === 0 && <span className="text-[10px] text-gray-400 italic">No PIC</span>}
-                                                            {item.pic.map((p, idx) => (
-                                                                <span key={idx} className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-indigo-100 text-indigo-700 border border-indigo-200 group/pic hover:bg-indigo-200 transition-colors cursor-default">
-                                                                    {p}
-                                                                    <button
-                                                                        onClick={() => removePic(item.id, p)}
-                                                                        className="ml-1 text-indigo-400 hover:text-indigo-900 opacity-0 group-hover/pic:opacity-100 transition-opacity"
-                                                                    >
-                                                                        <X size={10} strokeWidth={3} />
-                                                                    </button>
-                                                                </span>
-                                                            ))}
-                                                        </div>
-                                                    </td>
-
                                                     {/* COLLECTION STATUS (ANIMATED) */}
-                                                    <td className={`px-6 py-4 sticky right-24 z-10 ${item.isCollected ? 'bg-green-50' : 'bg-white group-hover:bg-yellow-50'}`}>
+                                                    <td className="px-6 py-4">
                                                         <button
                                                             onClick={() => toggleCollected(item.id)}
                                                             className={`group relative w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-bold border transition-all duration-300 overflow-hidden ${item.isCollected
@@ -737,8 +720,26 @@ const App: React.FC = () => {
                                                         )}
                                                     </td>
 
+                                                    {/* PIC ASSIGNMENT (MULTIPLE) */}
+                                                    <td className="px-6 py-4">
+                                                        <div className="flex flex-wrap gap-1">
+                                                            {item.pic.length === 0 && <span className="text-[10px] text-gray-400 italic">No PIC</span>}
+                                                            {item.pic.map((p, idx) => (
+                                                                <span key={idx} className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-indigo-100 text-indigo-700 border border-indigo-200 group/pic hover:bg-indigo-200 transition-colors cursor-default">
+                                                                    {p}
+                                                                    <button
+                                                                        onClick={() => removePic(item.id, p)}
+                                                                        className="ml-1 text-indigo-400 hover:text-indigo-900 opacity-0 group-hover/pic:opacity-100 transition-opacity"
+                                                                    >
+                                                                        <X size={10} strokeWidth={3} />
+                                                                    </button>
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                    </td>
+
                                                     {/* ACTIONS */}
-                                                    <td className={`px-6 py-4 whitespace-nowrap text-right sticky right-0 z-10 ${item.isCollected ? 'bg-green-50' : 'bg-white group-hover:bg-yellow-50'}`}>
+                                                    <td className={`px-6 py-4 whitespace-nowrap text-right sticky right-0 z-10 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.1)] ${item.isCollected ? 'bg-green-50' : 'bg-white group-hover:bg-yellow-50'}`}>
                                                         <div className="flex items-center justify-end gap-1">
                                                             <button
                                                                 onClick={() => handleView(item.id)}
@@ -913,6 +914,7 @@ const App: React.FC = () => {
                             </div>
                         </div>
 
+                        <AiSummary shipment={activeShipment} />
                         <Timeline events={activeShipment.events} />
                     </div>
                 )}
